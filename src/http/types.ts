@@ -81,6 +81,7 @@ export enum DeviceType {
     SMART_TRACK_CARD = 159, //T87B2
     LOCK_8502 = 180,
     LOCK_8506 = 184,
+    EufyS4NVR = 300,
     CAMERA_S4 = 301, // T8E00
     WALL_LIGHT_CAM_81A0 = 10005,
     INDOOR_PT_CAMERA_C220 = 10008, // T8W11C
@@ -1024,7 +1025,8 @@ export const GenericTypeProperty: PropertyMetadataNumeric = {
         159: "SmartTrack Card (T87B2)",
         180: "Smart Lock C210 (T8502)",
         184: "Smart Lock C220 (T8506)",
-        301: "eufyCam S4",
+        300: "EufyS4NVR (T8N00)"
+        301: "eufyCam S4 (T8E00)",
         10005: "Solar Wall Light Cam S120 (T81A0)",
         10008: "Indoor Cam C220 (T8W11C)",
         10009: "Indoor Cam C210 (T8419)",
