@@ -4979,7 +4979,7 @@ export class Station extends TypedEmitter<StationEvents> {
                 command: commandData
             });
         } else {
-            if (device.isCameraS4()) {
+            if (device.isIndoorPanAndTiltCameraS350() && !device.isCameraS4()) {
                 rootHTTPLogger.debug(`Station start livestream - sending command using CMD_START_REALTIME_MEDIA`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), videoCodec: videoCodec, main_sw_version: this.getSoftwareVersion() });
                 this.p2pSession.sendCommandWithInt({
                     commandType: CommandType.CMD_START_REALTIME_MEDIA,
