@@ -448,7 +448,7 @@ export class Station extends TypedEmitter<StationEvents> {
     }
 
     public static isStation(type: number): boolean {
-        return type === DeviceType.STATION || type === DeviceType.HB3 || type === DeviceType.MINIBASE_CHIME || type === DeviceType.HOMEBASE_MINI;
+        return type === DeviceType.STATION || type === DeviceType.HB3 || type === DeviceType.MINIBASE_CHIME || type === DeviceType.HOMEBASE_MINI || type === DeviceType.S4NVR;
     }
 
     public isStation(): boolean {
@@ -456,11 +456,11 @@ export class Station extends TypedEmitter<StationEvents> {
     }
 
     public static isStationHomeBase3(type: number): boolean {
-        return type === DeviceType.HB3;
+        return type === DeviceType.HB3 || type === DeviceType.S4NVR;
     }
 
     public static isStationHomeBase3BySn(sn: string): boolean {
-        return sn.startsWith("T8030");
+        return sn.startsWith("T8030") || sn.startsWith("T8N00");
     }
 
     public isStationHomeBase3(): boolean {
@@ -4743,7 +4743,7 @@ export class Station extends TypedEmitter<StationEvents> {
             throw new NotSupportedError("This functionality is not implemented or supported by this device", { context: { device: device.getSerial(), station: this.getSerial(), commandName: commandData.name, commandValue: commandData.value } });
         }
         rootHTTPLogger.debug(`Station start download - sending command`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), path: path, cipherID: cipher_id });
-        if (this.getDeviceType() === DeviceType.HB3) {
+        if (this.getDeviceType() === DeviceType.HB3 || this.getDeviceType() === DeviceType.S4NVR) {
             //TODO: Implement HB3 Support! Actually doesn't work and returns return_code -104 (ERROR_INVALID_ACCOUNT). It could be that we need the new encrypted p2p protocol to make this work...
             const rsa_key = this.p2pSession.getDownloadRSAPrivateKey();
             this.p2pSession.sendCommandWithStringPayload({
