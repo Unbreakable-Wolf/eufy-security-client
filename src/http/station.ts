@@ -4958,7 +4958,7 @@ export class Station extends TypedEmitter<StationEvents> {
             }, {
                 command: commandData
             });
-        } else if (device.isCameraS4()) {
+        } else if (device.isIndoorPanAndTiltCameraS350() && !device.isCameraS4()) {
             rootHTTPLogger.debug(`Station start livestream - sending command using CMD_SET_PAYLOAD`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), videoCodec: videoCodec, main_sw_version: this.getSoftwareVersion() });
             this.p2pSession.sendCommandWithStringPayload({
                 commandType: CommandType.CMD_SET_PAYLOAD,
@@ -4979,7 +4979,7 @@ export class Station extends TypedEmitter<StationEvents> {
                 command: commandData
             });
         } else {
-            if ((Device.isIntegratedDeviceBySn(this.getSerial()) || !isGreaterEqualMinVersion("2.0.9.7", this.getSoftwareVersion())) && (!this.getSerial().startsWith("T8420") || !isGreaterEqualMinVersion("1.0.0.25", this.getSoftwareVersion())) || device.isLockWifiVideo()) {
+            if ((device.isCameraS4()) {
                 rootHTTPLogger.debug(`Station start livestream - sending command using CMD_START_REALTIME_MEDIA`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), videoCodec: videoCodec, main_sw_version: this.getSoftwareVersion() });
                 this.p2pSession.sendCommandWithInt({
                     commandType: CommandType.CMD_START_REALTIME_MEDIA,
