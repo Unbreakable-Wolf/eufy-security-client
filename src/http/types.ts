@@ -1025,7 +1025,7 @@ export const GenericTypeProperty: PropertyMetadataNumeric = {
         159: "SmartTrack Card (T87B2)",
         180: "Smart Lock C210 (T8502)",
         184: "Smart Lock C220 (T8506)",
-        300: "S4NVR (T8N00)"
+        300: "S4NVR (T8N00)",
         301: "eufyCam S4 (T8E00)",
         10005: "Solar Wall Light Cam S120 (T81A0)",
         10008: "Indoor Cam C220 (T8W11C)",
