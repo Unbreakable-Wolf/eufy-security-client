@@ -1511,7 +1511,7 @@ export class Device extends TypedEmitter<DeviceEvents> {
             sn.startsWith("T8130") ||
             sn.startsWith("T8131") ||
             sn.startsWith("T8171") ||
-			sn.startsWith("T8172") ||
+			sn.startsWith("T8E00") ||
             sn.startsWith("T8422") ||
             sn.startsWith("T8423") ||
             sn.startsWith("T8424") ||
@@ -4630,4 +4630,5 @@ export class UnknownDevice extends Device {
     }
 
 }
+
 
