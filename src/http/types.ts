@@ -57,7 +57,6 @@ export enum DeviceType {
     SOLO_CAMERA_C210 = 64,
     FLOODLIGHT_CAMERA_8426 = 87, //E30
     SOLO_CAMERA_E30 = 88,
-    CAMERA_S4 = 89, // T8E00
     SMART_DROP = 90,
     BATTERY_DOORBELL_PLUS = 91,
     DOORBELL_SOLO = 93,
@@ -82,6 +81,7 @@ export enum DeviceType {
     SMART_TRACK_CARD = 159, //T87B2
     LOCK_8502 = 180,
     LOCK_8506 = 184,
+    CAMERA_S4 = 301, // T8E00
     WALL_LIGHT_CAM_81A0 = 10005,
     INDOOR_PT_CAMERA_C220 = 10008, // T8W11C
     INDOOR_PT_CAMERA_C210 = 10009, // T8419 / T8W11P?
@@ -1002,7 +1002,6 @@ export const GenericTypeProperty: PropertyMetadataNumeric = {
         64: "Solo Camera C210",
         87: "Floodlight Camera E30",
         88: "Solo Camera E30",
-        89: "eufyCam S4",
         90: "Smart Drop S300 (T8790)",
         91: "Video Doorbell Dual",
         93: "Video Doorbell Dual (Wired)",
@@ -1025,6 +1024,7 @@ export const GenericTypeProperty: PropertyMetadataNumeric = {
         159: "SmartTrack Card (T87B2)",
         180: "Smart Lock C210 (T8502)",
         184: "Smart Lock C220 (T8506)",
+        301: "eufyCam S4",
         10005: "Solar Wall Light Cam S120 (T81A0)",
         10008: "Indoor Cam C220 (T8W11C)",
         10009: "Indoor Cam C210 (T8419)",
