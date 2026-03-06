@@ -1571,60 +1571,26 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
             return null;
         }
         try {
-            const gtoken = this.getGToken();
-            const country = this.getCountry();
-            rootHTTPLogger.debug("getNvrWsSign - Starting request", {
-                stationSN,
-                tokenSnippet: this.token ? this.token.substring(0, 5) + "..." : "empty",
-                gtoken,
-                country
+            rootHTTPLogger.debug("getNvrWsSign - Starting request via API gateway", { stationSN });
+            const response = await this.request({
+                method: "get",
+                endpoint: `v1/smart/nvr/ws/sign?station_sn=${stationSN}`,
             });
 
-            const { default: got } = await import("got");
-            const response = await got("v1/smart/nvr/ws/sign", {
-                prefixUrl: "https://security-smart.eufylife.com",
-                method: "GET",
-                responseType: "json",
-                searchParams: {
-                    station_sn: stationSN
-                },
-                headers: {
-                    "Accept": "application/json, text/plain, */*",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "x-auth-token": this.token ?? "",
-                    "gtoken": gtoken,
-                    "Web-Country": country,
-                    "Origin": "https://security.eufy.com",
-                    "Referer": "https://security.eufy.com/",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
-                    "sec-ch-ua": "\"Not:A-Brand\";v=\"99\", \"Google Chrome\";v=\"145\", \"Chromium\";v=\"145\"",
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "\"Windows\"",
-                    "Sec-Fetch-Dest": "empty",
-                    "Sec-Fetch-Mode": "cors",
-                    "Sec-Fetch-Site": "cross-site"
-                },
-                retry: { limit: 2, methods: ["GET"] }
-            });
-            const result = response.body as any;
-            if (result.code === 0 && result.data) {
-                rootHTTPLogger.debug("getNvrWsSign - Sign token obtained", { stationSN, sign: result.data });
-                return result.data as string;
+            if (response.status === 200) {
+                const result = response.data as any;
+                if (result.code === 0 && result.data) {
+                    rootHTTPLogger.debug("getNvrWsSign - Sign token obtained", { stationSN, sign: result.data });
+                    return result.data as string;
+                } else {
+                    rootHTTPLogger.error("getNvrWsSign - Response code not ok", { stationSN, code: result.code, msg: result.msg, data: result });
+                }
             } else {
-                rootHTTPLogger.error("getNvrWsSign - Response code not ok", { stationSN, code: result.code, msg: result.msg });
+                rootHTTPLogger.error("getNvrWsSign - Status not 200", { stationSN, status: response.status, data: response.data });
             }
         } catch (err) {
             const error = ensureError(err);
-            if ((error as any).response) {
-                rootHTTPLogger.error("getNvrWsSign - Error response", {
-                    stationSN,
-                    status: (error as any).response.statusCode,
-                    body: (error as any).response.body
-                });
-            } else {
-                rootHTTPLogger.error("getNvrWsSign - Error", { error: getError(error), stationSN });
-            }
+            rootHTTPLogger.error("getNvrWsSign - Error", { error: getError(error), stationSN });
         }
         return null;
     }
