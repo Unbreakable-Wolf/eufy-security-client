@@ -1582,7 +1582,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
 
             const { default: got } = await import("got");
             const response = await got("v1/smart/nvr/ws/sign", {
-                prefixUrl: "https://security-smart.eufylife.com",
+                prefixUrl: "https://security-smart.eufy.com",
                 method: "GET",
                 responseType: "json",
                 headers: {
@@ -1590,9 +1590,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                     "Accept-Language": "en-US,en;q=0.9",
                     "Accept-Encoding": "gzip, deflate, br",
                     "X-Auth-Token": this.token ?? "",
-                    "GToken": gtoken,
-                    "App-Name": "eufy_mega",
-                    "Model-Type": "WEB",
+                    "gtoken": gtoken,
                     "Web-Country": country,
                     "Origin": "https://security.eufy.com",
                     "Referer": "https://security.eufy.com/",
@@ -1615,7 +1613,15 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
             }
         } catch (err) {
             const error = ensureError(err);
-            rootHTTPLogger.error("getNvrWsSign - Error", { error: getError(error), stationSN });
+            if ((error as any).response) {
+                rootHTTPLogger.error("getNvrWsSign - Error response", {
+                    stationSN,
+                    status: (error as any).response.statusCode,
+                    body: (error as any).response.body
+                });
+            } else {
+                rootHTTPLogger.error("getNvrWsSign - Error", { error: getError(error), stationSN });
+            }
         }
         return null;
     }
