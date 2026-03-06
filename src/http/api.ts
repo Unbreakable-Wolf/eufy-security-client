@@ -1582,14 +1582,17 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
 
             const { default: got } = await import("got");
             const response = await got("v1/smart/nvr/ws/sign", {
-                prefixUrl: "https://security-smart.eufy.com",
+                prefixUrl: "https://security-smart.eufylife.com",
                 method: "GET",
                 responseType: "json",
+                searchParams: {
+                    station_sn: stationSN
+                },
                 headers: {
                     "Accept": "application/json, text/plain, */*",
                     "Accept-Language": "en-US,en;q=0.9",
                     "Accept-Encoding": "gzip, deflate, br",
-                    "X-Auth-Token": this.token ?? "",
+                    "x-auth-token": this.token ?? "",
                     "gtoken": gtoken,
                     "Web-Country": country,
                     "Origin": "https://security.eufy.com",
