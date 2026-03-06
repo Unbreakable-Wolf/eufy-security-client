@@ -939,9 +939,21 @@ export class Device extends TypedEmitter<DeviceEvents> {
     }
 
     public getCommands(): Array<CommandName> {
-        const commands = DeviceCommands[this.getDeviceType()];
+        let commands = DeviceCommands[this.getDeviceType()];
+
+        // Spoof T8P00 PoE cameras as outdoor PTZ models since they aren't natively recognized
+        if (commands === undefined && this.getSerial().startsWith("T8P0")) {
+            commands = DeviceCommands[DeviceType.OUTDOOR_PT_CAMERA] || [];
+        }
+
         if (commands === undefined)
             return [];
+
+        // Ensure PoE cameras (and any forced outdoor PTZ) get the pan/tilt command injected
+        if (this.isOutdoorPanAndTiltCamera() && !commands.includes(CommandName.DevicePanAndTilt)) {
+            commands = [...commands, CommandName.DevicePanAndTilt];
+        }
+
         return commands;
     }
 
@@ -1861,7 +1873,7 @@ export class Device extends TypedEmitter<DeviceEvents> {
     }
 
     public isOutdoorPanAndTiltCamera(): boolean {
-        return Device.isOutdoorPanAndTiltCamera(this.rawDevice.device_type);
+        return Device.isOutdoorPanAndTiltCamera(this.rawDevice.device_type) || this.getSerial().startsWith("T8P0");
     }
 
     public isIndoorPanAndTiltCameraS350(): boolean {
