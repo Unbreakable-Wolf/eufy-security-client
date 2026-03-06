@@ -14,6 +14,7 @@ import { Cipher, Voice, Invite, DeviceListResponse, StationListResponse, HouseLi
 import { Station } from "./station";
 import { CommandName, PropertyName, SourceType } from "./types";
 import { TalkbackStream } from "../p2p/talkback";
+import { NvrWebRTCSignalingInfo } from "../p2p/nvr-session";
 
 export type PropertyValue = number | boolean | string | object | undefined;
 
@@ -72,7 +73,7 @@ export interface Invites {
 
 export interface HTTPApiRequest {
     method: Method;
-    endpoint: string|URL;
+    endpoint: string | URL;
     responseType?: "text" | "json" | "buffer";
     data?: any;
 }
@@ -173,7 +174,7 @@ export interface Schedule {
 }
 
 export interface ImageType {
-    ext: ImageFileExtension |"unknown";
+    ext: ImageFileExtension | "unknown";
     mime: string;
 }
 
@@ -202,14 +203,14 @@ export interface StationEvents {
     "property changed": (station: Station, name: string, value: PropertyValue, ready: boolean) => void;
     "raw property changed": (station: Station, type: number, value: string) => void;
     "command result": (station: Station, result: CommandResult) => void;
-    "download start": (station: Station, channel:number, metadata: StreamMetadata, videostream: Readable, audiostream: Readable) => void;
-    "download finish": (station: Station, channel:number) => void;
-    "livestream start": (station: Station, channel:number, metadata: StreamMetadata, videostream: Readable, audiostream: Readable) => void;
-    "livestream stop": (station: Station, channel:number) => void;
-    "livestream error": (station: Station, channel:number, error: Error) => void;
-    "rtsp livestream start": (station: Station, channel:number) => void;
-    "rtsp livestream stop": (station: Station, channel:number) => void;
-    "rtsp url": (station: Station, channel:number, value: string) => void;
+    "download start": (station: Station, channel: number, metadata: StreamMetadata, videostream: Readable, audiostream: Readable) => void;
+    "download finish": (station: Station, channel: number) => void;
+    "livestream start": (station: Station, channel: number, metadata: StreamMetadata, videostream: Readable, audiostream: Readable) => void;
+    "livestream stop": (station: Station, channel: number) => void;
+    "livestream error": (station: Station, channel: number, error: Error) => void;
+    "rtsp livestream start": (station: Station, channel: number) => void;
+    "rtsp livestream stop": (station: Station, channel: number) => void;
+    "rtsp url": (station: Station, channel: number, value: string) => void;
     "guard mode": (station: Station, guardMode: number) => void;
     "current mode": (station: Station, currentMode: number) => void;
     "alarm event": (station: Station, alarmEvent: AlarmEvent) => void;
@@ -240,6 +241,7 @@ export interface StationEvents {
     "sensor status": (station: Station, channel: number, status: number) => void;
     "garage door status": (station: Station, channel: number, doorId: number, status: number) => void;
     "storage info hb3": (station: Station, channel: number, storageInfo: StorageInfoBodyHB3) => void;
+    "nvr signaling ready": (station: Station, deviceSN: string, signalingInfo: NvrWebRTCSignalingInfo) => void;
 }
 
 export interface DeviceEvents {

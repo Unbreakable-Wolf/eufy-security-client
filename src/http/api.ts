@@ -34,8 +34,8 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
     private password: string;
     private ecdh: ECDH = createECDH("prime256v1");
 
-    private token: string|null = null;
-    private tokenExpiration: Date|null = null;
+    private token: string | null = null;
+    private tokenExpiration: Date | null = null;
     private renewAuthTokenJob?: schedule.Job;
 
     private connected = false;
@@ -175,7 +175,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                         if (response.statusCode === 401) {
                             const oldToken = this.token;
 
-                            rootHTTPLogger.debug("Invalidate token an get a new one...", { requestUrl: response.requestUrl , statusCode: response.statusCode, statusMessage: response.statusMessage });
+                            rootHTTPLogger.debug("Invalidate token an get a new one...", { requestUrl: response.requestUrl, statusCode: response.statusCode, statusMessage: response.statusMessage });
 
                             this.invalidateToken();
                             await this.login({ force: true });
@@ -323,7 +323,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                     },
                     enc: 0,
                     email: this.username,
-                    password:  encryptAPIData(this.password, this.ecdh.computeSecret(Buffer.from(this.SERVER_PUBLIC_KEY, "hex"))),
+                    password: encryptAPIData(this.password, this.ecdh.computeSecret(Buffer.from(this.SERVER_PUBLIC_KEY, "hex"))),
                     time_zone: new Date().getTimezoneOffset() !== 0 ? -new Date().getTimezoneOffset() * 60 * 1000 : 0,
                     transaction: `${new Date().getTime()}`
                 };
@@ -380,11 +380,11 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                             rootHTTPLogger.info("Please send requested captcha to proceed with authentication");
                             this.emit("captcha request", dataresult.captcha_id, dataresult.item);
                         } else {
-                            rootHTTPLogger.error("Login - Response code not ok", {code: result.code, msg: result.msg, data: response.data });
+                            rootHTTPLogger.error("Login - Response code not ok", { code: result.code, msg: result.msg, data: response.data });
                             this.emit("connection error", new ApiResponseCodeError("API response code not ok", { context: { code: result.code, message: result.msg } }));
                         }
                     } else {
-                        rootHTTPLogger.error("Login - Response data is missing", {code: result.code, msg: result.msg, data: result.data });
+                        rootHTTPLogger.error("Login - Response data is missing", { code: result.code, msg: result.msg, data: result.data });
                         this.emit("connection error", new ApiInvalidResponseError("API response data is missing", { context: { code: result.code, message: result.msg, data: result.data } }));
                     }
                 } else {
@@ -494,7 +494,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                         const trusted_devices = await this.listTrustDevice();
                         trusted_devices.forEach((trusted_device: TrustDevice) => {
                             if (trusted_device.is_current_device === 1) {
-                                rootHTTPLogger.debug("Add trust device - This device is trusted. Token expiration extended:", { trustDevice: { phoneModel: trusted_device.phone_model, openUdid: trusted_device.open_udid }, tokenExpiration: this.tokenExpiration});
+                                rootHTTPLogger.debug("Add trust device - This device is trusted. Token expiration extended:", { trustDevice: { phoneModel: trusted_device.phone_model, openUdid: trusted_device.open_udid }, tokenExpiration: this.tokenExpiration });
                             }
                         });
                         return true;
@@ -645,7 +645,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         rootHTTPLogger.debug("Api request", { method: request.method, endpoint: request.endpoint, responseType: request.responseType, token: this.token, data: request.data });
         try {
             let options: OptionsOfTextResponseBody | OptionsOfBufferResponseBody | OptionsOfJSONResponseBody;
-            switch(request.responseType) {
+            switch (request.responseType) {
                 case undefined:
                 case "json":
                     options = {
@@ -881,11 +881,11 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return this.hubs;
     }
 
-    public getToken(): string|null {
+    public getToken(): string | null {
         return this.token;
     }
 
-    public getTokenExpiration(): Date|null {
+    public getTokenExpiration(): Date | null {
         return this.tokenExpiration;
     }
 
@@ -967,7 +967,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                             rootHTTPLogger.error(`${functionName} - Response data is missing`, { code: result.code, msg: result.msg, data: response.data, endpoint: endpoint, startTime: startTime, endTime: endTime, filter: filter, maxResults: maxResults });
                         }
                     } else {
-                        rootHTTPLogger.error(`${functionName} - Response code not ok`, {code: result.code, msg: result.msg, data: response.data, endpoint: endpoint, startTime: startTime, endTime: endTime, filter: filter, maxResults: maxResults });
+                        rootHTTPLogger.error(`${functionName} - Response code not ok`, { code: result.code, msg: result.msg, data: response.data, endpoint: endpoint, startTime: startTime, endTime: endTime, filter: filter, maxResults: maxResults });
                     }
                 } else {
                     rootHTTPLogger.error(`${functionName} - Status return code not 200`, { status: response.status, statusText: response.statusText, data: response.data, endpoint: endpoint, startTime: startTime, endTime: endTime, filter: filter, maxResults: maxResults });
@@ -1180,7 +1180,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return [];
     }
 
-    public async getHouseDetail(houseID: string): Promise<HouseDetail|null> {
+    public async getHouseDetail(houseID: string): Promise<HouseDetail | null> {
         if (this.connected) {
             try {
                 const response = await this.request({
@@ -1316,7 +1316,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return this.persistentData;
     }
 
-    public async getPassportProfile(): Promise<PassportProfileResponse|null> {
+    public async getPassportProfile(): Promise<PassportProfileResponse | null> {
         try {
             const response = await this.request({
                 method: "get",
@@ -1346,7 +1346,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return null;
     }
 
-    public async addUser(deviceSN: string, nickname: string, stationSN = ""): Promise<AddUserResponse|null> {
+    public async addUser(deviceSN: string, nickname: string, stationSN = ""): Promise<AddUserResponse | null> {
         if (this.connected) {
             try {
                 const response = await this.request({
@@ -1409,7 +1409,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return false;
     }
 
-    public async getUsers(deviceSN: string, stationSN: string): Promise<Array<User>|null> {
+    public async getUsers(deviceSN: string, stationSN: string): Promise<Array<User> | null> {
         try {
             const response = await this.request({
                 method: "get",
@@ -1435,7 +1435,7 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return null;
     }
 
-    public async getUser(deviceSN: string, stationSN: string, shortUserId: string): Promise<User|null> {
+    public async getUser(deviceSN: string, stationSN: string, shortUserId: string): Promise<User | null> {
         try {
             const users = await this.getUsers(deviceSN, stationSN);
             if (users !== null) {
@@ -1558,4 +1558,60 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
         return false;
     }
 
+    // ─── NVR WebRTC Support ─────────────────────────────────────────────────
+
+    /**
+     * Get a signed session token for NVR WebRTC streaming.
+     * Calls GET https://security-smart.eufylife.com/v1/smart/nvr/ws/sign
+     * Returns the base64 sign token string, or null on failure.
+     */
+    public async getNvrWsSign(stationSN: string): Promise<string | null> {
+        if (!this.connected || !this.token) {
+            rootHTTPLogger.error("getNvrWsSign - Not connected", { stationSN });
+            return null;
+        }
+        try {
+            const { default: got } = await import("got");
+            const response = await got("v1/smart/nvr/ws/sign", {
+                prefixUrl: "https://security-smart.eufylife.com",
+                method: "GET",
+                responseType: "json",
+                headers: {
+                    "X-Auth-Token": this.token,
+                    "GToken": this.headers.gtoken ?? "",
+                    "App-Name": "eufy_mega",
+                    "Model-Type": "WEB",
+                    "Web-Country": this.headers.country ?? "US",
+                    "Origin": "https://security.eufy.com",
+                    "Referer": "https://security.eufy.com/",
+                    "User-Agent": "Mozilla/5.0 eufy-security-client"
+                },
+                retry: { limit: 2, methods: ["GET"] }
+            });
+            const result = response.body as any;
+            if (result.code === 0 && result.data) {
+                rootHTTPLogger.debug("getNvrWsSign - Sign token obtained", { stationSN, sign: result.data });
+                return result.data as string;
+            } else {
+                rootHTTPLogger.error("getNvrWsSign - Response code not ok", { stationSN, code: result.code, msg: result.msg });
+            }
+        } catch (err) {
+            const error = ensureError(err);
+            rootHTTPLogger.error("getNvrWsSign - Generic Error", { error: getError(error), stationSN });
+        }
+        return null;
+    }
+
+    /** Returns the current GToken = md5(user_id) (needed for NVR WebSocket auth). */
+    public getGToken(): string {
+        if (this.headers.gtoken) {
+            return this.headers.gtoken;
+        }
+        if (this.persistentData.user_id) {
+            return md5(this.persistentData.user_id);
+        }
+        return "";
+    }
+
 }
+

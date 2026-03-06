@@ -135,7 +135,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
     private p2pKey?: Buffer;
     private enableEmbeddedPKCS1Support = false;
 
-    constructor(rawStation: StationListResponse, api: HTTPApi, ipAddress?:string, listeningPort = 0, publicKey = "", enableEmbeddedPKCS1Support = false) {
+    constructor(rawStation: StationListResponse, api: HTTPApi, ipAddress?: string, listeningPort = 0, publicKey = "", enableEmbeddedPKCS1Support = false) {
         super();
         this.api = api;
         this.lockPublicKey = publicKey;
@@ -203,7 +203,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
         this.messageVideoStates.clear();
         this.p2pSeqMapping.clear();
 
-        for(let datatype = 0; datatype < 4; datatype++) {
+        for (let datatype = 0; datatype < 4; datatype++) {
 
             this.expectedSeqNo[datatype] = 0;
 
@@ -268,13 +268,13 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
     }
 
     private _clearMessageStateTimeouts(): void {
-        for(const message of this.messageStates.values()) {
+        for (const message of this.messageStates.values()) {
             this._clearTimeout(message.timeout);
         }
     }
 
     private _clearMessageVideoStateTimeouts(): void {
-        for(const message of this.messageVideoStates.values()) {
+        for (const message of this.messageVideoStates.values()) {
             this._clearTimeout(message.timeout);
         }
     }
@@ -503,6 +503,13 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
 
     public async connect(host?: string): Promise<void> {
         if (!this.connected && !this.connecting && this.rawStation.p2p_did !== undefined) {
+            // NVR stations have empty app_conn — P2P is not supported for these devices.
+            // They use WebRTC via security-smart.eufylife.com instead.
+            if (!this.rawStation.app_conn || this.rawStation.app_conn === "") {
+                rootP2PLogger.warn(`Station ${this.rawStation.station_sn} has no P2P cloud relay addresses (NVR station). Skipping P2P connect — use NVR WebRTC path instead.`);
+                return;
+            }
+
             this.connecting = true;
             this.terminating = false;
             await this.renewDSKKey();
@@ -577,7 +584,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
             try {
                 const json = JSON.parse(p2pcommand.value);
                 nested_commandType = json.cmd;
-                if(json.payload && json.payload.apiCommand !== undefined) {
+                if (json.payload && json.payload.apiCommand !== undefined) {
                     nested_commandType2 = json.payload.apiCommand;
                 }
             } catch (err) {
@@ -691,19 +698,19 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
         }
     }
 
-    private async _sendCommand(message: P2PMessageState|P2PQueueMessage): Promise<void> {
+    private async _sendCommand(message: P2PMessageState | P2PQueueMessage): Promise<void> {
         if (isP2PQueueMessage(message)) {
             const ageing = +new Date - message.timestamp;
             if (ageing <= this.MAX_COMMAND_QUEUE_TIMEOUT) {
                 const commandHeader = buildCommandHeader(this.seqNumber, message.p2pCommand.commandType);
                 let payload: Buffer;
                 const channel = message.p2pCommand.channel !== undefined ? message.p2pCommand.channel : 0;
-                switch(message.p2pCommandType) {
+                switch (message.p2pCommandType) {
                     case InternalP2PCommandType.WithInt:
                         payload = buildIntCommandPayload(this.encryption, this.p2pKey, this.rawStation.station_sn, this.rawStation.p2p_did, message.p2pCommand.commandType, message.p2pCommand.value as number, message.p2pCommand.strValue === undefined ? "" : message.p2pCommand.strValue, channel);
                         break;
                     case InternalP2PCommandType.WithIntString:
-                        payload = buildIntStringCommandPayload(this.encryption, this.p2pKey, this.rawStation.station_sn, this.rawStation.p2p_did, message.p2pCommand.commandType, message.p2pCommand.value as number, message.p2pCommand.valueSub === undefined ? 0 : message.p2pCommand.valueSub, message.p2pCommand.strValue === undefined ? "" : message.p2pCommand.strValue , message.p2pCommand.strValueSub === undefined ? "" : message.p2pCommand.strValueSub, channel);
+                        payload = buildIntStringCommandPayload(this.encryption, this.p2pKey, this.rawStation.station_sn, this.rawStation.p2p_did, message.p2pCommand.commandType, message.p2pCommand.value as number, message.p2pCommand.valueSub === undefined ? 0 : message.p2pCommand.valueSub, message.p2pCommand.strValue === undefined ? "" : message.p2pCommand.strValue, message.p2pCommand.strValueSub === undefined ? "" : message.p2pCommand.strValueSub, channel);
                         //TODO: Check if this "if" can be moved elsewhere
                         if (message.p2pCommand.commandType === CommandType.CMD_NAS_TEST) {
                             this.currentMessageState[P2PDataType.DATA].rtspStream[channel] = message.p2pCommand.value === 1 ? true : false;
@@ -923,14 +930,14 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                     this.seqNumber = this._incrementSequence(this.seqNumber);
 
                     this.sendMessage(`Send smartsafe gateway command to station`, this.connectAddress!, RequestMessageType.DATA, data);
-                    const tmpSendQueue: Array<P2PQueueMessage> = [ ...this.sendQueue ];
+                    const tmpSendQueue: Array<P2PQueueMessage> = [...this.sendQueue];
                     this.sendQueue = [];
                     this.sendCommandPing(Station.CHANNEL);
                     tmpSendQueue.forEach(element => {
                         this.sendQueue.push(element);
                     });
                 } else if (Device.isLockWifiR10(this.rawStation.device_type) || Device.isLockWifiR20(this.rawStation.device_type)) {
-                    const tmpSendQueue: Array<P2PQueueMessage> = [ ...this.sendQueue ];
+                    const tmpSendQueue: Array<P2PQueueMessage> = [...this.sendQueue];
                     this.sendQueue = [];
                     const payload = buildVoidCommandPayload(Station.CHANNEL);
                     const data = Buffer.concat([buildCommandHeader(0, CommandType.CMD_GATEWAYINFO), payload.subarray(0, payload.length - 2), buildCommandHeader(0, CommandType.CMD_PING).subarray(2), payload]);
@@ -952,7 +959,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                         this.sendQueue.push(element);
                     });
                 } else if (this.rawStation.devices !== undefined && this.rawStation.devices !== null && this.rawStation.devices.length !== undefined && this.rawStation.devices.length > 0 && Device.isLockWifiVideo(this.rawStation.devices[0]?.device_type)) {
-                    const tmpSendQueue: Array<P2PQueueMessage> = [ ...this.sendQueue ];
+                    const tmpSendQueue: Array<P2PQueueMessage> = [...this.sendQueue];
                     this.sendQueue = [];
                     const payload = buildVoidCommandPayload(Station.CHANNEL);
                     const data = Buffer.concat([buildCommandHeader(0, CommandType.CMD_GATEWAYINFO), payload.subarray(0, payload.length - 2), buildCommandHeader(0, CommandType.CMD_PING).subarray(2), payload]);
@@ -974,7 +981,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                         this.sendQueue.push(element);
                     });
                 } else {
-                    const tmpSendQueue: Array<P2PQueueMessage> = [ ...this.sendQueue ];
+                    const tmpSendQueue: Array<P2PQueueMessage> = [...this.sendQueue];
                     this.sendQueue = [];
                     this.sendCommandWithoutData(CommandType.CMD_GATEWAYINFO, Station.CHANNEL);
                     tmpSendQueue.forEach(element => {
@@ -1080,7 +1087,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                     data: msg.subarray(8)
                 };
 
-                this.sendAck({ host: rinfo.address, port: rinfo.port}, dataTypeBuffer, seqNo);
+                this.sendAck({ host: rinfo.address, port: rinfo.port }, dataTypeBuffer, seqNo);
                 rootP2PLogger.debug(`Received message - DATA ${P2PDataType[message.type]} - Processing sequence ${message.seqNo}...`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, dataType: P2PDataType[message.type], seqNo: message.seqNo });
 
                 if (message.seqNo === this.expectedSeqNo[dataType]) {
@@ -1137,7 +1144,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                 this._clearLookupRetryTimeout();
                 this._clearLookup2RetryTimeout();
 
-                rootP2PLogger.trace(`Received message - LOOKUP_ADDR2 - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { ip: ip, port: port, data: data.toString("hex") }});
+                rootP2PLogger.trace(`Received message - LOOKUP_ADDR2 - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { ip: ip, port: port, data: data.toString("hex") } });
                 rootP2PLogger.debug(`Connecting to host ${ip} on port ${port} (CHECK_CAM2)...`, { stationSN: this.rawStation.station_sn, ip: ip, port: port, data: data.toString("hex") });
 
                 for (let i = 0; i < 4; i++)
@@ -1151,7 +1158,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
             }
         } else if (hasHeader(msg, ResponseMessageType.TURN_SERVER_OK)) {
             if (!this.connected && !this.p2pTurnConfirmed) {
-                rootP2PLogger.trace(`Received message - TURN_SERVER_OK - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { message: msg.toString("hex"), length: msg.length }});
+                rootP2PLogger.trace(`Received message - TURN_SERVER_OK - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { message: msg.toString("hex"), length: msg.length } });
                 this.sendMessage(`Send TURN_CLIENT_OK`, { host: rinfo.address, port: rinfo.port }, RequestMessageType.TURN_CLIENT_OK);
                 this.p2pTurnConfirmed = true;
             }
@@ -1165,7 +1172,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                 for (let i = 0; i < 4; i++)
                     this.sendCamCheck2({ host: rinfo.address, port: port }, binaryIP);
 
-                rootP2PLogger.trace(`Received message - TURN_SERVER_TOKEN - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { port: port, binaryIP: binaryIP.toString("hex") }});
+                rootP2PLogger.trace(`Received message - TURN_SERVER_TOKEN - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { port: port, binaryIP: binaryIP.toString("hex") } });
                 this.cloudLookupWithTurnServer({ host: rinfo.address, port: port }, binaryIP);
             }
         } else if (hasHeader(msg, ResponseMessageType.TURN_SERVER_LOOKUP_OK) || hasHeader(msg, ResponseMessageType.UNKNOWN_83) || hasHeader(msg, ResponseMessageType.TURN_SERVER_LIST)) {
@@ -1174,10 +1181,10 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
             if (!this.connected) {
                 const responseCode = msg.subarray(4, 6).readUInt16LE();
 
-                rootP2PLogger.trace(`Received message - LOOKUP_RESP - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { responseCode: responseCode }});
+                rootP2PLogger.trace(`Received message - LOOKUP_RESP - Got response`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { responseCode: responseCode } });
             }
         } else {
-            rootP2PLogger.debug(`Received unknown message`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { message: msg.toString("hex"), length: msg.length }});
+            rootP2PLogger.debug(`Received unknown message`, { stationSN: this.rawStation.station_sn, remoteAddress: rinfo.address, remotePort: rinfo.port, response: { message: msg.toString("hex"), length: msg.length } });
         }
     }
 
@@ -1270,7 +1277,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                     this.handleData(data_message);
                     this.initializeMessageBuilder(message.type);
                     if (data.length > 0 && message.type === P2PDataType.DATA) {
-                        rootP2PLogger.debug(`Parsing message - DATA ${P2PDataType[message.type]} - Parsed data`, { stationSN: this.rawStation.station_sn, seqNo: message.seqNo, data_message: data_message,  datalen: data.length, data: data.toString("hex"), offsetDataSeqNumber: this.offsetDataSeqNumber, seqNumber: this.seqNumber, p2pDataSeqNumber: this.p2pDataSeqNumber });
+                        rootP2PLogger.debug(`Parsing message - DATA ${P2PDataType[message.type]} - Parsed data`, { stationSN: this.rawStation.station_sn, seqNo: message.seqNo, data_message: data_message, datalen: data.length, data: data.toString("hex"), offsetDataSeqNumber: this.offsetDataSeqNumber, seqNumber: this.seqNumber, p2pDataSeqNumber: this.p2pDataSeqNumber });
                         this.offsetDataSeqNumber++;
                     }
                 }
@@ -1292,17 +1299,17 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
 
             if (result_msg) {
                 let return_code = 0;
-                let resultData: Buffer|undefined;
+                let resultData: Buffer | undefined;
                 if (message.bytesToRead > 0) {
                     if (message.signCode > 0) {
                         try {
                             message.data = decryptP2PData(message.data, this.p2pKey!);
-                        } catch(err) {
+                        } catch (err) {
                             const error = ensureError(err);
                             rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - Decrypt Error`, { error: getError(error), stationSN: this.rawStation.station_sn, message: { seqNo: message.seqNo, channel: message.channel, commandType: CommandType[message.commandId], signCode: message.signCode, type: message.type, dataType: P2PDataType[message.dataType], data: message.data.toString("hex") } });
                         }
                     }
-                    return_code = message.data.subarray(0, 4).readUInt32LE()|0;
+                    return_code = message.data.subarray(0, 4).readUInt32LE() | 0;
                     resultData = message.data.subarray(4);
                 }
                 const error_codeStr = ErrorCode[return_code];
@@ -1320,7 +1327,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                 if (msg_state) {
                     if (msg_state.commandType === message.commandId) {
                         this._clearTimeout(msg_state.timeout);
-                        const command_type =  msg_state.nestedCommandType !== undefined ? msg_state.nestedCommandType : msg_state.commandType;
+                        const command_type = msg_state.nestedCommandType !== undefined ? msg_state.nestedCommandType : msg_state.commandType;
                         rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - Result data for command received`, { stationSN: this.rawStation.station_sn, message: { sequence: msg_state.sequence, commandType: msg_state.commandType, nestedCommandType: msg_state.nestedCommandType, channel: msg_state.channel, acknowledged: msg_state.acknowledged, retries: msg_state.retries, returnCode: return_code, data: msg_state.data, customData: msg_state.customData }, resultCodeName: error_codeStr, resultCode: return_code });
                         if (return_code === ErrorCode.ERROR_FAILED_TO_REQUEST) {
                             msg_state.returnCode = return_code;
@@ -1441,7 +1448,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
 
     private handleDataBinaryAndVideo(message: P2PDataMessage): void {
         if (!this.currentMessageState[message.dataType].invalidStream) {
-            switch(message.commandId) {
+            switch (message.commandId) {
                 case CommandType.CMD_VIDEO_FRAME:
                     this.waitForStreamData(message.dataType, true);
 
@@ -1623,15 +1630,15 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                 //data = decryptP2PData(message.data, this.p2pKey!);
                 try {
                     data = decryptP2PData(message.data, Buffer.from(getP2PCommandEncryptionKey(this.rawStation.station_sn, this.rawStation.p2p_did)));
-                } catch(err) {
+                } catch (err) {
                     const error = ensureError(err);
                     rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - Decrypt Error`, { error: getError(error), stationSN: this.rawStation.station_sn, message: { seqNo: message.seqNo, channel: message.channel, commandType: CommandType[message.commandId], signCode: message.signCode, type: message.type, dataType: P2PDataType[message.dataType], data: message.data.toString("hex") } });
                 }
             }
             rootP2PLogger.trace(`Handle DATA ${P2PDataType[message.dataType]} - Received data`, { stationSN: this.rawStation.station_sn, commandIdName: CommandType[message.commandId], commandId: message.commandId, data: message.data.toString("hex"), seqNumber: this.seqNumber, p2pDataSeqNumber: this.p2pDataSeqNumber, offsetDataSeqNumber: this.offsetDataSeqNumber });
-            switch(message.commandId) {
+            switch (message.commandId) {
                 case CommandType.CMD_GET_ALARM_MODE:
-                    rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - Alarm mode changed to: ${AlarmMode[data.readUIntBE(0, 1)]}`, { stationSN: this.rawStation.station_sn,  });
+                    rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - Alarm mode changed to: ${AlarmMode[data.readUIntBE(0, 1)]}`, { stationSN: this.rawStation.station_sn, });
                     this.emit("alarm mode", data.readUIntBE(0, 1) as AlarmMode);
                     break;
                 case CommandType.CMD_CAMERA_INFO:
@@ -1817,7 +1824,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                                         let data = fac.getData()!;
                                         try {
                                             if (aesKey !== undefined) {
-                                                data = decryptPayloadData(data,  Buffer.from(aesKey, "hex"), Buffer.from(getLockVectorBytes(this.rawStation.station_sn), "hex"))
+                                                data = decryptPayloadData(data, Buffer.from(aesKey, "hex"), Buffer.from(getLockVectorBytes(this.rawStation.station_sn), "hex"))
                                             }
                                             const returnCode = data.readInt8(0);
                                             const commandType = Number.parseInt(ESLCommand[ESLBleCommand[fac.getCommandCode()!] as unknown as number]);
@@ -1969,78 +1976,78 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                                 rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe`, { stationSN: this.rawStation.station_sn, commandIdName: CommandType[json.cmd], commandId: json.cmd });
                                 switch (json.cmd) {
                                     case CommandType.CMD_SMARTSAFE_SETTINGS:
-                                    {
-                                        const payload = json.payload as SmartSafeSettingsNotification;
-                                        try {
-                                            const data = decodeSmartSafeData(this.rawStation.station_sn, Buffer.from(payload.data, "hex"));
-                                            const returnCode = data.data.readInt8(0);
-                                            const customData = {
-                                                ...this.customDataStaging[payload.prj_id]
-                                            };
-                                            if (this.customDataStaging[payload.prj_id]) {
-                                                const result: CommandResult = {
-                                                    channel: customData.channel,
-                                                    command_type: payload.prj_id,
-                                                    return_code: returnCode,
-                                                    customData: customData.customData
+                                        {
+                                            const payload = json.payload as SmartSafeSettingsNotification;
+                                            try {
+                                                const data = decodeSmartSafeData(this.rawStation.station_sn, Buffer.from(payload.data, "hex"));
+                                                const returnCode = data.data.readInt8(0);
+                                                const customData = {
+                                                    ...this.customDataStaging[payload.prj_id]
                                                 };
-                                                this.emit("secondary command", result);
-                                                delete this.customDataStaging[payload.prj_id];
-                                            }
-                                            rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe return code: ${data.data.readInt8(0)}`, { stationSN: this.rawStation.station_sn, commandIdName: CommandType[json.cmd], commandId: json.cmd, decoded: data, commandCode: SmartSafeCommandCode[data.commandCode], returnCode: returnCode, channel: customData?.channel, customData: customData?.customData });
-                                        } catch (err) {
-                                            const error = ensureError(err);
-                                            rootP2PLogger.error(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe Error`, { error: getError(error), stationSN: this.rawStation.station_sn, commandIdName: CommandType[json.cmd], commandId: json.cmd, payload: payload });
-                                        }
-                                        this._clearSecondaryCommandTimeout();
-                                        this.sendQueuedMessage();
-                                        break;
-                                    }
-                                    case CommandType.CMD_SMARTSAFE_STATUS_UPDATE:
-                                    {
-                                        const payload = json.payload as SmartSafeStatusNotification;
-                                        switch (payload.event_type) {
-                                            case SmartSafeEvent.LOCK_STATUS:
-                                            {
-                                                const eventValues = payload.event_value as SmartSafeEventValueDetail;
-
-                                                rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe Status update - LOCK_STATUS`, { stationSN: this.rawStation.station_sn, eventValues: eventValues });
-                                                /*
-                                                    type values:
-                                                        1: Unlocked by PIN
-                                                        2: Unlocked by User
-                                                        3: Unlocked by key
-                                                        4: Unlocked by App
-                                                        5: Unlocked by Dual Unlock
-                                                */
-                                                if (eventValues.action === 0) {
-                                                    this.emit("parameter", message.channel, CommandType.CMD_SMARTSAFE_LOCK_STATUS, "0");
-                                                } else if (eventValues.action === 1) {
-                                                    this.emit("parameter", message.channel, CommandType.CMD_SMARTSAFE_LOCK_STATUS, "1");
-                                                } else if (eventValues.action === 2) {
-                                                    this.emit("jammed", message.channel);
-                                                } else if (eventValues.action === 3) {
-                                                    this.emit("low battery", message.channel);
+                                                if (this.customDataStaging[payload.prj_id]) {
+                                                    const result: CommandResult = {
+                                                        channel: customData.channel,
+                                                        command_type: payload.prj_id,
+                                                        return_code: returnCode,
+                                                        customData: customData.customData
+                                                    };
+                                                    this.emit("secondary command", result);
+                                                    delete this.customDataStaging[payload.prj_id];
                                                 }
-                                                break;
+                                                rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe return code: ${data.data.readInt8(0)}`, { stationSN: this.rawStation.station_sn, commandIdName: CommandType[json.cmd], commandId: json.cmd, decoded: data, commandCode: SmartSafeCommandCode[data.commandCode], returnCode: returnCode, channel: customData?.channel, customData: customData?.customData });
+                                            } catch (err) {
+                                                const error = ensureError(err);
+                                                rootP2PLogger.error(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe Error`, { error: getError(error), stationSN: this.rawStation.station_sn, commandIdName: CommandType[json.cmd], commandId: json.cmd, payload: payload });
                                             }
-                                            case SmartSafeEvent.SHAKE_ALARM:
-                                                this.emit("shake alarm", message.channel, payload.event_value as number);
-                                                break;
-                                            case SmartSafeEvent.ALARM_911:
-                                                this.emit("911 alarm", message.channel, payload.event_value as number);
-                                                break;
-                                            //case SmartSafeEvent.BATTERY_STATUS:
-                                            //    break;
-                                            case SmartSafeEvent.INPUT_ERR_MAX:
-                                                this.emit("wrong try-protect alarm", message.channel);
-                                                break;
-                                            default:
-                                                rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe Status update - Not implemented`, { stationSN: this.rawStation.station_sn, message: data.toString() });
-                                                break;
+                                            this._clearSecondaryCommandTimeout();
+                                            this.sendQueuedMessage();
+                                            break;
                                         }
-                                        break;
-                                    }
+                                    case CommandType.CMD_SMARTSAFE_STATUS_UPDATE:
+                                        {
+                                            const payload = json.payload as SmartSafeStatusNotification;
+                                            switch (payload.event_type) {
+                                                case SmartSafeEvent.LOCK_STATUS:
+                                                    {
+                                                        const eventValues = payload.event_value as SmartSafeEventValueDetail;
+
+                                                        rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe Status update - LOCK_STATUS`, { stationSN: this.rawStation.station_sn, eventValues: eventValues });
+                                                        /*
+                                                            type values:
+                                                                1: Unlocked by PIN
+                                                                2: Unlocked by User
+                                                                3: Unlocked by key
+                                                                4: Unlocked by App
+                                                                5: Unlocked by Dual Unlock
+                                                        */
+                                                        if (eventValues.action === 0) {
+                                                            this.emit("parameter", message.channel, CommandType.CMD_SMARTSAFE_LOCK_STATUS, "0");
+                                                        } else if (eventValues.action === 1) {
+                                                            this.emit("parameter", message.channel, CommandType.CMD_SMARTSAFE_LOCK_STATUS, "1");
+                                                        } else if (eventValues.action === 2) {
+                                                            this.emit("jammed", message.channel);
+                                                        } else if (eventValues.action === 3) {
+                                                            this.emit("low battery", message.channel);
+                                                        }
+                                                        break;
+                                                    }
+                                                case SmartSafeEvent.SHAKE_ALARM:
+                                                    this.emit("shake alarm", message.channel, payload.event_value as number);
+                                                    break;
+                                                case SmartSafeEvent.ALARM_911:
+                                                    this.emit("911 alarm", message.channel, payload.event_value as number);
+                                                    break;
+                                                //case SmartSafeEvent.BATTERY_STATUS:
+                                                //    break;
+                                                case SmartSafeEvent.INPUT_ERR_MAX:
+                                                    this.emit("wrong try-protect alarm", message.channel);
+                                                    break;
+                                                default:
+                                                    rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe Status update - Not implemented`, { stationSN: this.rawStation.station_sn, message: data.toString() });
+                                                    break;
+                                            }
+                                            break;
+                                        }
                                     default:
                                         rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_NOTIFY_PAYLOAD SmartSafe - Not implemented`, { stationSN: this.rawStation.station_sn, message: data.toString() });
                                         break;
@@ -2140,31 +2147,31 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                         const str = getNullTerminatedString(data, "utf8");
                         rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_DATABASE :`, { stationSN: this.rawStation.station_sn, payload: str });
                         const databaseResponse = parseJSON(str, rootP2PLogger) as P2PDatabaseResponse;
-                        switch(databaseResponse.cmd) {
+                        switch (databaseResponse.cmd) {
                             case CommandType.CMD_DATABASE_QUERY_LATEST_INFO:
-                            {
-                                let data: Array<P2PDatabaseQueryLatestInfoResponse> = [];
-                                if (databaseResponse.data !== undefined && databaseResponse.data as unknown as string !== "[]")
-                                    data = databaseResponse.data as Array<P2PDatabaseQueryLatestInfoResponse>;
-                                const result: Array<DatabaseQueryLatestInfo> = [];
-                                for (const record of data) {
-                                    if (record.payload.crop_hb3_path !== "") {
-                                        result.push({
-                                            device_sn: record.device_sn,
-                                            event_count: record.payload.event_count,
-                                            crop_local_path: record.payload.crop_hb3_path
-                                        });
-                                    } else {
-                                        result.push({
-                                            device_sn: record.device_sn,
-                                            event_count: record.payload.event_count,
-                                            crop_cloud_path: record.payload.crop_cloud_path
-                                        });
+                                {
+                                    let data: Array<P2PDatabaseQueryLatestInfoResponse> = [];
+                                    if (databaseResponse.data !== undefined && databaseResponse.data as unknown as string !== "[]")
+                                        data = databaseResponse.data as Array<P2PDatabaseQueryLatestInfoResponse>;
+                                    const result: Array<DatabaseQueryLatestInfo> = [];
+                                    for (const record of data) {
+                                        if (record.payload.crop_hb3_path !== "") {
+                                            result.push({
+                                                device_sn: record.device_sn,
+                                                event_count: record.payload.event_count,
+                                                crop_local_path: record.payload.crop_hb3_path
+                                            });
+                                        } else {
+                                            result.push({
+                                                device_sn: record.device_sn,
+                                                event_count: record.payload.event_count,
+                                                crop_cloud_path: record.payload.crop_cloud_path
+                                            });
+                                        }
                                     }
+                                    this.emit("database query latest", databaseResponse.mIntRet, result);
+                                    break;
                                 }
-                                this.emit("database query latest", databaseResponse.mIntRet, result);
-                                break;
-                            }
                             case CommandType.CMD_DATABASE_COUNT_BY_DATE: {
                                 let data: Array<P2PDatabaseCountByDateResponse> = [];
                                 if (databaseResponse.data !== undefined && databaseResponse.data as unknown as string !== "[]")
@@ -2176,7 +2183,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                                         count: record.count
                                     });
                                 }
-                                this.emit("database count by date", databaseResponse.mIntRet ,result);
+                                this.emit("database count by date", databaseResponse.mIntRet, result);
                                 break;
                             }
                             case CommandType.CMD_DATABASE_QUERY_LOCAL: {
@@ -2283,12 +2290,12 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                     this.api.getCipher(/*this.rawStation.station_sn, */cipherID, this.rawStation.member.admin_user_id).then((cipher) => {
                         rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_GATEWAYINFO - get cipher with cipherID`, { stationSN: this.rawStation.station_sn, channel: message.channel, data: data.toString("hex"), cipherID: cipherID, cipher: JSON.stringify(cipher) });
                         if (cipher !== undefined) {
-                            this.encryption  = EncryptionType.LEVEL_2;
+                            this.encryption = EncryptionType.LEVEL_2;
                             const rsa = getRSAPrivateKey(cipher.private_key, this.enableEmbeddedPKCS1Support);
                             this.p2pKey = rsa.decrypt(encryptedKey);
                             rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_GATEWAYINFO - set encryption level 2`, { stationSN: this.rawStation.station_sn, key: this.p2pKey.toString("hex") });
                         } else {
-                            this.encryption  = EncryptionType.LEVEL_1;
+                            this.encryption = EncryptionType.LEVEL_1;
                             this.p2pKey = Buffer.from(getP2PCommandEncryptionKey(this.rawStation.station_sn, this.rawStation.p2p_did));
                             rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_GATEWAYINFO - set encryption level 1`, { stationSN: this.rawStation.station_sn, key: this.p2pKey.toString("hex") });
                         }
@@ -2303,7 +2310,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                         this.sendQueuedMessage();
                     }).catch((err) => {
                         const error = ensureError(err);
-                        this.encryption  = EncryptionType.LEVEL_1;
+                        this.encryption = EncryptionType.LEVEL_1;
                         this.p2pKey = Buffer.from(getP2PCommandEncryptionKey(this.rawStation.station_sn, this.rawStation.p2p_did));
                         rootP2PLogger.debug(`Handle DATA ${P2PDataType[message.dataType]} - CMD_GATEWAYINFO - set encryption level 1 (fallback)`, { error: getError(error), stationSN: this.rawStation.station_sn, message: { seqNo: message.seqNo, channel: message.channel, commandType: CommandType[message.commandId], signCode: message.signCode, type: message.type, dataType: P2PDataType[message.dataType], data: message.data.toString("hex") }, key: this.p2pKey.toString("hex") });
                         this._clearTimeout(this.messageStates.get(message.seqNo)?.timeout);
@@ -2434,9 +2441,10 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
         this.currentMessageState[datatype].videoStream = null;
         this.currentMessageState[datatype].audioStream = null;
 
-        this.currentMessageState[datatype].videoStream = new Readable({ autoDestroy: true,
+        this.currentMessageState[datatype].videoStream = new Readable({
+            autoDestroy: true,
 
-            read() {}/*,
+            read() { }/*,
 
             destroy(this, error, _callback) {
                 if (error) {
@@ -2446,9 +2454,10 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
                 this.emit("close");
             }*/
         });
-        this.currentMessageState[datatype].audioStream = new Readable({ autoDestroy: true,
+        this.currentMessageState[datatype].audioStream = new Readable({
+            autoDestroy: true,
 
-            read() {}/*,
+            read() { }/*,
 
             destroy(this, error, _callback) {
                 if (error) {
@@ -2656,6 +2665,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
 
     public updateRawStation(value: StationListResponse): void {
         this.rawStation = value;
+        rootP2PLogger.debug(`[NVR-DIAG] updateRawStation`, { stationSN: value.station_sn, device_type: value.device_type, p2p_did: value.p2p_did, app_conn: value.app_conn, p2p_license: (value as any).p2p_license });
 
         this.channel = Station.getChannel(value.device_type);
 
@@ -2756,7 +2766,7 @@ export class P2PClientProtocol extends TypedEmitter<P2PClientProtocolEvents> {
         this.lockAESKeys.set(commandCode, aesKey);
     }
 
-    public getLockAESKey(commandCode: number): string|undefined {
+    public getLockAESKey(commandCode: number): string | undefined {
         return this.lockAESKeys.get(commandCode);
     }
 

@@ -16,6 +16,7 @@ const error_2 = require("./error");
 const utils_3 = require("../utils");
 const repl_1 = require("repl");
 const logging_1 = require("../logging");
+const nvr_session_1 = require("../p2p/nvr-session");
 class Station extends tiny_typed_emitter_1.TypedEmitter {
     api;
     rawStation;
@@ -27,6 +28,8 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
     currentDelay = 0;
     reconnectTimeout;
     terminating = false;
+    // Keyed by device serial — active NVR WebRTC sessions
+    nvrSessions = new Map();
     p2pConnectionType = types_2.P2PConnectionType.QUICKEST;
     static CHANNEL = 255;
     static CHANNEL_INDOOR = 1000;
@@ -471,6 +474,10 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
     }
     getSerial() {
         return this.rawStation.station_sn;
+    }
+    /** Returns true if this station is an NVR (identified by empty app_conn). */
+    isNVR() {
+        return !this.rawStation.app_conn || this.rawStation.app_conn === "";
     }
     getSoftwareVersion() {
         return this.rawStation.main_sw_version;
@@ -935,6 +942,8 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
     onDisconnect() {
         logging_1.rootHTTPLogger.info(`Disconnected from station ${this.getSerial()}`);
         this.emit("close", this);
+        this.nvrSessions.forEach((session) => session.disconnect());
+        this.nvrSessions.clear();
         this.pinVerified = false;
         if (!this.isEnergySavingDevice() && !this.terminating)
             this.scheduleReconnect();
@@ -4835,28 +4844,12 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
                 command: commandData
             });
         }
-        else if (device.isPoECamera()) {
-            // PoE cameras connected to an NVR use CMD_SET_PAYLOAD with CMD_START_REALTIME_MEDIA
-            // routed via the correct camera channel on the NVR.
-            logging_1.rootHTTPLogger.debug(`Station start livestream - sending command for PoE NVR camera via CMD_SET_PAYLOAD`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), videoCodec: videoCodec, channel: device.getChannel() });
-            this.p2pSession.sendCommandWithStringPayload({
-                commandType: types_2.CommandType.CMD_SET_PAYLOAD,
-                value: JSON.stringify({
-                    "account_id": this.rawStation.member.admin_user_id,
-                    "cmd": types_2.CommandType.CMD_START_REALTIME_MEDIA,
-                    "mChannel": device.getChannel(),
-                    "mValue3": types_2.CommandType.CMD_START_REALTIME_MEDIA,
-                    "payload": {
-                        "ClientOS": "Android",
-                        "camera_type": 0,
-                        "entrytype": 0,
-                        "key": rsa_key?.exportKey("components-public").n.subarray(1).toString("hex"),
-                        "streamtype": videoCodec === types_2.VideoCodec.H264 ? 1 : 2,
-                    }
-                }),
-                channel: device.getChannel()
-            }, {
-                command: commandData
+        else if (this.isNVR() || device.isPoECamera()) {
+            // NVR PoE cameras stream via WebRTC through security-smart.eufylife.com —
+            // P2P is not available for these devices (app_conn is empty).
+            logging_1.rootHTTPLogger.info(`Station start livestream - Starting NVR WebRTC session for PoE camera`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), channel: device.getChannel() });
+            this.startNvrWebRTCStream(device).catch((err) => {
+                logging_1.rootHTTPLogger.error(`Station start livestream - NVR WebRTC session error`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), error: (0, utils_3.getError)(err instanceof Error ? err : new Error(String(err))) });
             });
         }
         else if (device.isOutdoorPanAndTiltCamera()) {
@@ -5023,17 +5016,24 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
             throw new error_2.LivestreamNotRunningError("Livestream for device is not running", { context: { device: device.getSerial(), station: this.getSerial(), commandName: commandData.name, commandValue: commandData.value } });
         }
         logging_1.rootHTTPLogger.debug(`Station stop livestream - sending command`, { stationSN: this.getSerial(), deviceSN: device.getSerial() });
-        this.p2pSession.sendCommandWithInt({
-            commandType: types_2.CommandType.CMD_STOP_REALTIME_MEDIA,
-            value: device.getChannel(),
-            channel: device.getChannel()
-        }, {
-            command: commandData
-        });
+        if (device.isPoECamera()) {
+            this.stopNvrWebRTCStream(device);
+        }
+        else {
+            this.p2pSession.sendCommandWithInt({
+                commandType: types_2.CommandType.CMD_STOP_REALTIME_MEDIA,
+                value: device.getChannel(),
+                channel: device.getChannel()
+            }, {
+                command: commandData
+            });
+        }
     }
     isLiveStreaming(device) {
         if (device.getStationSerial() !== this.getSerial())
             return false;
+        if (this.nvrSessions.has(device.getSerial()))
+            return true;
         return this.p2pSession.isLiveStreaming(device.getChannel());
     }
     isDownloading(device) {
@@ -10631,6 +10631,38 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
         }
         else {
             throw new error_1.NotSupportedError("This functionality is not implemented or supported by this device", { context: { device: device.getSerial(), station: this.getSerial(), commandName: commandData.name } });
+        }
+    }
+    async startNvrWebRTCStream(device) {
+        const deviceSN = device.getSerial();
+        if (this.nvrSessions.has(deviceSN)) {
+            return;
+        }
+        const sign = await this.api.getNvrWsSign(this.getSerial());
+        if (!sign) {
+            throw new Error("Failed to get NVR WebSocket sign token");
+        }
+        const session = new nvr_session_1.NvrWebRTCSession(this.getSerial(), device.getChannel(), this.api.getToken(), this.api.getGToken(), sign, this.api.getCountry());
+        session.on("signalingReady", (info) => {
+            this.emit("nvr signaling ready", this, deviceSN, info);
+        });
+        session.on("error", (err) => {
+            this.emit("livestream error", this, device.getChannel(), err);
+            this.nvrSessions.delete(deviceSN);
+        });
+        session.on("close", () => {
+            this.emit("livestream stop", this, device.getChannel());
+            this.nvrSessions.delete(deviceSN);
+        });
+        this.nvrSessions.set(deviceSN, session);
+        await session.connect();
+    }
+    stopNvrWebRTCStream(device) {
+        const deviceSN = device.getSerial();
+        const session = this.nvrSessions.get(deviceSN);
+        if (session) {
+            session.disconnect();
+            this.nvrSessions.delete(deviceSN);
         }
     }
 }
