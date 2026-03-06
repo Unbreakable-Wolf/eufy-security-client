@@ -87,7 +87,7 @@ export enum DeviceType {
     INDOOR_PT_CAMERA_C220 = 10008, // T8W11C
     INDOOR_PT_CAMERA_C210 = 10009, // T8419 / T8W11P?
     INDOOR_PT_CAMERA_C220_V2 = 10010, // T8W11C (Type 10010)
-    CAMERA_C35 = 10035 //T8110
+    CAMERA_C35 = 10035, //T8110
 }
 
 export enum ParamType {
@@ -587,7 +587,7 @@ export enum PropertyName {
     DeviceWifiRSSI = "wifiRssi",
     DeviceWifiSignalLevel = "wifiSignalLevel",
     DeviceEnabled = "enabled",
-    DeviceAntitheftDetection= "antitheftDetection",
+    DeviceAntitheftDetection = "antitheftDetection",
     DeviceAutoNightvision = "autoNightvision",
     DeviceNightvision = "nightvision",
     DeviceStatusLed = "statusLed",
@@ -1370,7 +1370,7 @@ export const DeviceStatusLedDoorbellProperty: PropertyMetadataBoolean = {
 
 export const DeviceStatusLedT8200XProperty: PropertyMetadataBoolean = {
     ...DeviceStatusLedProperty,
-    key:ParamType.COMMAND_LED_NIGHT_OPEN,
+    key: ParamType.COMMAND_LED_NIGHT_OPEN,
     commandId: ParamType.COMMAND_LED_NIGHT_OPEN,
 };
 
@@ -6156,7 +6156,7 @@ export const DeviceProperties: Properties = {
         [PropertyName.DeviceRecordingRetriggerInterval]: DeviceRecordingRetriggerIntervalBatteryDoorbellProperty,
         [PropertyName.DeviceRecordingEndClipMotionStops]: DeviceRecordingEndClipMotionStopsProperty,
         [PropertyName.DeviceVideoStreamingQuality]: DeviceVideoStreamingQualityBatteryDoorbellProperty, //OK
-        [PropertyName.DeviceVideoRecordingQuality]:DeviceVideoRecordingQualityT8530Property, //OK
+        [PropertyName.DeviceVideoRecordingQuality]: DeviceVideoRecordingQualityT8530Property, //OK
         [PropertyName.DeviceChimeIndoor]: DeviceChimeIndoorBatteryDoorbellProperty,
         [PropertyName.DeviceChimeHomebase]: DeviceChimeHomebaseBatteryDoorbellProperty, //OK
         [PropertyName.DeviceChimeHomebaseRingtoneVolume]: DeviceChimeHomebaseRingtoneVolumeBatteryDoorbellProperty, //OK
@@ -7452,7 +7452,7 @@ export const DeviceProperties: Properties = {
         [PropertyName.DevicePersonName]: DevicePersonNameProperty,
         [PropertyName.DeviceNotificationType]: DeviceNotificationTypeProperty,
     },
-        [DeviceType.CAMERA_S4]: {
+    [DeviceType.CAMERA_S4]: {
         ...GenericDeviceProperties,
         [PropertyName.DeviceEnabled]: DeviceEnabledSoloProperty,
         [PropertyName.DeviceBattery]: DeviceBatteryProperty,
@@ -8695,12 +8695,12 @@ export const StationCrossTrackingGroupListProperty: PropertyMetadataObject = {
             return obj.length > 0 &&
                 obj.every((element) => {
                     return typeof element === "object" &&
-                    "value" in element &&
-                    Array.isArray(element.value) &&
-                    element.value.length > 0 &&
-                    element.value.every((value) => {
-                        return typeof value === "string";
-                    })
+                        "value" in element &&
+                        Array.isArray(element.value) &&
+                        element.value.length > 0 &&
+                        element.value.every((value) => {
+                            return typeof value === "string";
+                        })
                 });
         }
         return false;
@@ -9188,7 +9188,7 @@ export const StationProperties: Properties = {
         [PropertyName.StationSdCapacity]: StationSdCapacityProperty,
         [PropertyName.StationSdCapacityAvailable]: StationSdAvailableCapacityProperty,
     },
-        [DeviceType.CAMERA_S4]: {
+    [DeviceType.CAMERA_S4]: {
         ...BaseStationProperties,
         [PropertyName.StationLANIpAddress]: StationLanIpAddressStandaloneProperty,
         [PropertyName.StationMacAddress]: StationMacAddressProperty,
@@ -9835,7 +9835,7 @@ export const DeviceCommands: Commands = {
         CommandName.DeviceStopTalkback,
         CommandName.DeviceSnooze,
     ],
-        [DeviceType.CAMERA_S4]: [
+    [DeviceType.CAMERA_S4]: [
         CommandName.DeviceStartLivestream,
         CommandName.DeviceStopLivestream,
         CommandName.DeviceTriggerAlarmSound,
@@ -10343,7 +10343,7 @@ export const StationCommands: Commands = {
         CommandName.StationDatabaseCountByDate,
         CommandName.StationDatabaseDelete,
     ],
-        [DeviceType.CAMERA_S4]: [
+    [DeviceType.CAMERA_S4]: [
         CommandName.StationReboot,
         CommandName.StationTriggerAlarmSound,
         CommandName.StationDownloadImage,
