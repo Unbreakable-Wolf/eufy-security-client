@@ -1572,7 +1572,28 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
             throw new error_1.InvalidCommandValueError("Invalid value for this command", { context: { device: device.getSerial(), station: this.getSerial(), commandName: commandData.name, commandValue: commandData.value } });
         }
         logging_1.rootHTTPLogger.debug(`Station pan and tilt - sending command`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), direction: types_2.PanTiltDirection[direction], command });
-        if (device.getDeviceType() === types_1.DeviceType.FLOODLIGHT_CAMERA_8423) {
+        if (device.isPoECamera()) {
+            // PoE cameras connected to an NVR route via CMD_SET_PAYLOAD, similar to how the
+            // T8423 Floodlight routes - the NVR receives the outer CMD_SET_PAYLOAD and
+            // forwards the inner CMD_INDOOR_ROTATE to the camera on the specified channel.
+            this.p2pSession.sendCommandWithStringPayload({
+                commandType: types_2.CommandType.CMD_SET_PAYLOAD,
+                value: JSON.stringify({
+                    "account_id": this.rawStation.member.admin_user_id,
+                    "cmd": types_2.CommandType.CMD_INDOOR_ROTATE,
+                    "mChannel": device.getChannel(),
+                    "mValue3": 0,
+                    "payload": {
+                        "cmd_type": direction === types_2.PanTiltDirection.ROTATE360 ? -1 : command,
+                        "rotate_type": direction,
+                    }
+                }),
+                channel: device.getChannel()
+            }, {
+                command: commandData
+            });
+        }
+        else if (device.getDeviceType() === types_1.DeviceType.FLOODLIGHT_CAMERA_8423) {
             this.p2pSession.sendCommandWithStringPayload({
                 commandType: types_2.CommandType.CMD_SET_PAYLOAD,
                 value: JSON.stringify({
@@ -4800,6 +4821,30 @@ class Station extends tiny_typed_emitter_1.TypedEmitter {
                     "account_id": this.rawStation.member.admin_user_id,
                     "cmd": types_2.CommandType.CMD_START_REALTIME_MEDIA,
                     "mChannel": 0,
+                    "mValue3": types_2.CommandType.CMD_START_REALTIME_MEDIA,
+                    "payload": {
+                        "ClientOS": "Android",
+                        "camera_type": 0,
+                        "entrytype": 0,
+                        "key": rsa_key?.exportKey("components-public").n.subarray(1).toString("hex"),
+                        "streamtype": videoCodec === types_2.VideoCodec.H264 ? 1 : 2,
+                    }
+                }),
+                channel: device.getChannel()
+            }, {
+                command: commandData
+            });
+        }
+        else if (device.isPoECamera()) {
+            // PoE cameras connected to an NVR use CMD_SET_PAYLOAD with CMD_START_REALTIME_MEDIA
+            // routed via the correct camera channel on the NVR.
+            logging_1.rootHTTPLogger.debug(`Station start livestream - sending command for PoE NVR camera via CMD_SET_PAYLOAD`, { stationSN: this.getSerial(), deviceSN: device.getSerial(), videoCodec: videoCodec, channel: device.getChannel() });
+            this.p2pSession.sendCommandWithStringPayload({
+                commandType: types_2.CommandType.CMD_SET_PAYLOAD,
+                value: JSON.stringify({
+                    "account_id": this.rawStation.member.admin_user_id,
+                    "cmd": types_2.CommandType.CMD_START_REALTIME_MEDIA,
+                    "mChannel": device.getChannel(),
                     "mValue3": types_2.CommandType.CMD_START_REALTIME_MEDIA,
                     "payload": {
                         "ClientOS": "Android",

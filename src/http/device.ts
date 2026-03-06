@@ -942,16 +942,20 @@ export class Device extends TypedEmitter<DeviceEvents> {
         let commands = DeviceCommands[this.getDeviceType()];
 
         // Spoof T8P00 and T8E00 PoE cameras as outdoor PTZ models since they aren't natively recognized
-        if (commands === undefined && (this.getSerial().startsWith("T8P0") || this.getSerial().startsWith("T8E0"))) {
+        if (commands === undefined && this.isPoECamera()) {
             commands = DeviceCommands[DeviceType.OUTDOOR_PT_CAMERA] || [];
         }
 
         if (commands === undefined)
             return [];
 
-        // Ensure PoE cameras (and any forced outdoor PTZ) get the pan/tilt command injected
-        if (this.isOutdoorPanAndTiltCamera() && !commands.includes(CommandName.DevicePanAndTilt)) {
+        // Ensure PoE cameras get the pan/tilt command injected if not already present
+        if (this.isPoECamera() && !commands.includes(CommandName.DevicePanAndTilt)) {
             commands = [...commands, CommandName.DevicePanAndTilt];
+        }
+
+        if (this.isPoECamera() && !commands.includes(CommandName.DeviceStartLivestream)) {
+            commands = [...commands, CommandName.DeviceStartLivestream];
         }
 
         return commands;
@@ -1873,7 +1877,11 @@ export class Device extends TypedEmitter<DeviceEvents> {
     }
 
     public isOutdoorPanAndTiltCamera(): boolean {
-        return Device.isOutdoorPanAndTiltCamera(this.rawDevice.device_type) || this.getSerial().startsWith("T8P0") || this.getSerial().startsWith("T8E0");
+        return Device.isOutdoorPanAndTiltCamera(this.rawDevice.device_type);
+    }
+
+    public isPoECamera(): boolean {
+        return this.getSerial().startsWith("T8P0") || this.getSerial().startsWith("T8E0") || this.getDeviceType() === DeviceType.CAMERA_S4;
     }
 
     public isIndoorPanAndTiltCameraS350(): boolean {
