@@ -1571,11 +1571,11 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
             return null;
         }
         try {
-            rootHTTPLogger.debug("getNvrWsSign - Starting request via API gateway", { stationSN });
+            rootHTTPLogger.debug("getNvrWsSign - Starting request via API gateway (absolute URL)", { stationSN });
             const response = await this.request({
                 method: "get",
-                endpoint: `v1/smart/nvr/ws/sign?station_sn=${stationSN}`,
-            });
+                endpoint: `https://security-smart.eufylife.com/v1/smart/nvr/ws/sign?station_sn=${stationSN}`,
+            }, true);
 
             if (response.status === 200) {
                 const result = response.data as any;
