@@ -1578,10 +1578,10 @@ export class HTTPApi extends TypedEmitter<HTTPApiEvents> {
                 responseType: "json",
                 headers: {
                     "X-Auth-Token": this.token,
-                    "GToken": this.headers.gtoken ?? "",
+                    "GToken": this.getGToken(),
                     "App-Name": "eufy_mega",
                     "Model-Type": "WEB",
-                    "Web-Country": this.headers.country ?? "US",
+                    "Web-Country": this.getCountry(),
                     "Origin": "https://security.eufy.com",
                     "Referer": "https://security.eufy.com/",
                     "User-Agent": "Mozilla/5.0 eufy-security-client"
